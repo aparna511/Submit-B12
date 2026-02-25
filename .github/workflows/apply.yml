@@ -23,4 +23,4 @@ jobs:
           APPLICANT_EMAIL:     "aparnaneshani@gmail.com"
           RESUME_LINK:         "https://www.linkedin.com/in/aparna511/"
           # GITHUB_REPOSITORY, GITHUB_SERVER_URL, GITHUB_RUN_ID are automatically available
-        run: python submit.py
+        run: python Submit.py
