@@ -24,7 +24,7 @@ REPOSITORY_LINK = os.getenv("GITHUB_REPOSITORY_URL", "https://github.com/aparna5
 
 # For GitHub Actions – will be auto-detected in most cases
 ACTION_RUN_LINK = os.getenv("GITHUB_SERVER_URL", "https://github.com") + "/" + \
-                  os.getenv("GITHUB_REPOSITORY", "aparna511/your-repo") + "/actions/runs/" + \
+                  os.getenv("GITHUB_REPOSITORY", "aparna511/Submit-B12") + "/actions/runs/" + \
                   os.getenv("GITHUB_RUN_ID", "unknown")
 
 SIGNING_SECRET = b"hello-there-from-b12"   # kept as bytes for HMAC
