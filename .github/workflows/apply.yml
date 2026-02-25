@@ -1,7 +1,7 @@
 name: Submit Application to B12
 
 on:
-  workflow_dispatch:      # manual trigger
+  workflow_dispatch:   # manual trigger from Actions tab
   push:
     branches: [main]
 
@@ -9,7 +9,7 @@ jobs:
   submit:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -17,10 +17,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Submit application
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Submit to B12
         env:
           APPLICANT_NAME:      "Aparna"
           APPLICANT_EMAIL:     "aparnaneshani@gmail.com"
           RESUME_LINK:         "https://www.linkedin.com/in/aparna511/"
-          # GITHUB_REPOSITORY, GITHUB_SERVER_URL, GITHUB_RUN_ID are automatically available
-        run: python Submit.py
+         
+        run: python Submit.py    
