@@ -1,124 +1,91 @@
 #!/usr/bin/env python3
 """
-B12 application submission script for GitHub Actions (or other CI)
-Submits application with HMAC-SHA256 signature
+B12 application submission script for GitHub Actions / CI
 """
-
-import os
-import sys
-import json
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.showtraceback = lambda *args, **kwargs: None
 import hashlib
 import hmac
-import time
+import json
+import os
+import sys
 from datetime import datetime, timezone
 import requests
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Configuration – only these should be customized
+# ──────────────────────────────────────────────────────────────────────────────
 
+NAME = "APARNA NALGONDA"
+EMAIL = "aparnaneshani@gmail.com"
+RESUME_LINK = "https://www.linkedin.com/in/aparna511"          
+REPOSITORY_LINK = os.getenv("GITHUB_REPOSITORY_URL", "https://github.com/aparna511")
 
+# For GitHub Actions – will be auto-detected in most cases
+ACTION_RUN_LINK = os.getenv("GITHUB_SERVER_URL", "https://github.com") + "/" + \
+                  os.getenv("GITHUB_REPOSITORY", "aparna511/your-repo") + "/actions/runs/" + \
+                  os.getenv("GITHUB_RUN_ID", "unknown")
 
-SIGNING_SECRET = "hello-there-from-b12"           
+SIGNING_SECRET = b"hello-there-from-b12"   # kept as bytes for HMAC
 
-ENDPOINT = "https://b12.io/apply/submission"
-
-
-
-NAME          = os.environ.get("APPLICANT_NAME",         secrets.APPLICANT_NAME)                   
-EMAIL         = os.environ.get("APPLICANT_EMAIL",        secrets.APPLICANT_EMAIL)         
-RESUME_LINK   = os.environ.get("RESUME_LINK",            secrets.RESUME_LINK)                        
-REPO_LINK     = os.environ.get("GITHUB_REPOSITORY_URL",  os.environ.get("GITHUB_SERVER_URL", "https://github.com") + "/" + os.environ.get("GITHUB_REPOSITORY", ""))
-
-
-RUN_ID        = os.environ.get("GITHUB_RUN_ID",          "")
-RUN_ATTEMPT   = os.environ.get("GITHUB_RUN_ATTEMPT",     "1")
-ACTION_RUN_LINK = (
-    f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/"
-    f"{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{RUN_ID}"
-    if RUN_ID else
-    "https://github.com/placeholder/repo/actions/runs/unknown"
-)
-
-
-def get_iso_timestamp() -> str:
-    """Return current time in ISO 8601 with millisecond precision and Z suffix"""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-
-
-def create_canonical_payload() -> dict:
-    return {
-        "action_run_link": ACTION_RUN_LINK,
-        "email":           EMAIL,
-        "name":            NAME,
-        "repository_link": REPO_LINK,
-        "resume_link":     RESUME_LINK,
-        "timestamp":       get_iso_timestamp(),
-    }
-
-
-def canonical_json(d: dict) -> bytes:
-    """
-    Create compact, alphabetically sorted JSON bytes (exactly as B12 expects)
-    """
-    return json.dumps(
-        d,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False
-    ).encode("utf-8")
-
-
-def sign_payload(payload_bytes: bytes, secret: str) -> str:
-    """HMAC-SHA256 of payload using the secret, return hex digest"""
-    secret_bytes = secret.encode("utf-8")
-    digest = hmac.new(secret_bytes, payload_bytes, hashlib.sha256).hexdigest()
-    return f"sha256={digest}"
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Main logic
+# ──────────────────────────────────────────────────────────────────────────────
 
 def main():
-    if not all([NAME.strip(), EMAIL.strip(), RESUME_LINK.strip(), REPO_LINK.strip()]):
-        print("ERROR: Missing required fields (name, email, resume_link, repository_link)", file=sys.stderr)
-        sys.exit(1)
+    # 1. Current UTC time in ISO 8601 with milliseconds and Z
+    now = datetime.now(timezone.utc)
+    timestamp = now.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
-    payload_dict = create_canonical_payload()
-    payload_bytes = canonical_json(payload_dict)
+    # 2. Prepare payload – keys MUST be sorted alphabetically
+    payload = {
+        "action_run_link": ACTION_RUN_LINK,
+        "email": EMAIL,
+        "name": NAME,
+        "repository_link": REPOSITORY_LINK,
+        "resume_link": RESUME_LINK,
+        "timestamp": timestamp,
+    }
 
-    signature = sign_payload(payload_bytes, SIGNING_SECRET)
+    # 3. Create compact JSON (no extra whitespace, sorted keys)
+    json_payload = json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    json_bytes = json_payload.encode("utf-8")
+
+    # 4. Compute HMAC-SHA256 signature
+    signature = hmac.new(
+        key=SIGNING_SECRET,
+        msg=json_bytes,
+        digestmod=hashlib.sha256
+    ).hexdigest()
 
     headers = {
         "Content-Type": "application/json",
-        "X-Signature-256": signature,
+        "X-Signature-256": f"sha256={signature}",
     }
 
-    print("Submitting application to B12...", flush=True)
-    print(f"Payload timestamp: {payload_dict['timestamp']}", flush=True)
-    print(f"Signature: {signature}", flush=True)
-
+    # 5. Send POST request
+    url = "https://b12.io/apply/submission"
     try:
-        r = requests.post(
-            ENDPOINT,
-            data=payload_bytes,
-            headers=headers,
-            timeout=15,
-        )
-        r.raise_for_status()
+        resp = requests.post(url, data=json_bytes, headers=headers, timeout=15)
+        resp.raise_for_status()
 
-        response = r.json()
-        if response.get("success") is True:
-            receipt = response.get("receipt", "no-receipt-returned")
-            print("\nSubmission successful!")
+        result = resp.json()
+        if result.get("success") is True:
+            receipt = result.get("receipt", "no-receipt-returned")
+            print("Submission successful!")
             print(f"Receipt: {receipt}")
-            print("\nFull response:", json.dumps(response, indent=2))
+            print("\nFull response:", json.dumps(result, indent=2))
             return 0
         else:
-            print("Server responded success:false", file=sys.stderr)
-            print(r.text, file=sys.stderr)
+            print("Server responded, but success=false", file=sys.stderr)
+            print(json.dumps(result, indent=2), file=sys.stderr)
             return 1
 
     except requests.RequestException as e:
-        print(f"Request failed: {e}", file=sys.stderr)
-        if hasattr(e, "response") and e.response is not None:
-            print(f"Status: {e.response.status_code}", file=sys.stderr)
-            print(e.response.text, file=sys.stderr)
+        print(f"Failed to submit application: {e}", file=sys.stderr)
+        if hasattr(e.response, "text"):
+            print("Response body:", e.response.text, file=sys.stderr)
         return 1
 
 
