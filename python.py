@@ -14,22 +14,21 @@ from datetime import datetime, timezone
 import requests
 
 
-# ────────────────────────────────────────────────
-# Configuration – do NOT commit real secrets here
-# ────────────────────────────────────────────────
 
-SIGNING_SECRET = "hello-there-from-b12"           # as provided (public for this challenge)
+
+
+SIGNING_SECRET = "hello-there-from-b12"           
 
 ENDPOINT = "https://b12.io/apply/submission"
 
-# These should come from GitHub Actions environment variables or repository secrets
-# For local testing you can set them manually or via .env
-NAME          = os.environ.get("APPLICANT_NAME",         "Aparna")                     # ← change / set in CI
-EMAIL         = os.environ.get("APPLICANT_EMAIL",        "aparna@example.com")         # ← change / set in CI
-RESUME_LINK   = os.environ.get("RESUME_LINK",            "")                           # required
+
+
+NAME          = os.environ.get("APPLICANT_NAME",         secrets.APPLICANT_NAME)                   
+EMAIL         = os.environ.get("APPLICANT_EMAIL",        secrets.APPLICANT_EMAIL)         
+RESUME_LINK   = os.environ.get("RESUME_LINK",            secrets.RESUME_LINK)                        
 REPO_LINK     = os.environ.get("GITHUB_REPOSITORY_URL",  os.environ.get("GITHUB_SERVER_URL", "https://github.com") + "/" + os.environ.get("GITHUB_REPOSITORY", ""))
 
-# GitHub-specific – will be empty / fallback on other platforms
+
 RUN_ID        = os.environ.get("GITHUB_RUN_ID",          "")
 RUN_ATTEMPT   = os.environ.get("GITHUB_RUN_ATTEMPT",     "1")
 ACTION_RUN_LINK = (
