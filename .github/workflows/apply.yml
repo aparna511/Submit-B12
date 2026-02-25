@@ -20,7 +20,7 @@ jobs:
       - name: Submit application
         env:
           APPLICANT_NAME:      "Aparna"
-          APPLICANT_EMAIL:     "your-real-email@example.com"
-          RESUME_LINK:         "https://your-resume-link.example.com/resume.pdf"
+          APPLICANT_EMAIL:     "aparnaneshani@gmail.com"
+          RESUME_LINK:         "https://www.linkedin.com/in/aparna511/"
           # GITHUB_REPOSITORY, GITHUB_SERVER_URL, GITHUB_RUN_ID are automatically available
         run: python submit.py
