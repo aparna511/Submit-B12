@@ -1,0 +1,26 @@
+name: Submit Application to B12
+
+on:
+  workflow_dispatch:      # manual trigger
+  push:
+    branches: [main]
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Submit application
+        env:
+          APPLICANT_NAME:      "Aparna"
+          APPLICANT_EMAIL:     "your-real-email@example.com"
+          RESUME_LINK:         "https://your-resume-link.example.com/resume.pdf"
+          # GITHUB_REPOSITORY, GITHUB_SERVER_URL, GITHUB_RUN_ID are automatically available
+        run: python submit.py
